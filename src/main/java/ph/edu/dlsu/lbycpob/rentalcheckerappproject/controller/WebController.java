@@ -142,4 +142,49 @@ public class WebController {
         return "manager-dashboard";
     }
 
+    // Building Details View (PDF Screen 4)
+    @GetMapping("/building-details")
+    public String showBuildingDetails(@RequestParam(value = "id", defaultValue = "1") Long buildingId,
+                                      HttpSession session,
+                                      Model model) {
+        if (session.getAttribute("user") == null) return "redirect:/";
+
+        model.addAttribute("buildingId", buildingId);
+
+        // Load the actual Building so the floor stack has data to render.
+        model.addAttribute("building", unitService.getBuildingById(buildingId));
+
+        return "building-details";
+    }
+
+    // Room Details View (PDF Screen 5 & 9)
+    // Handles three cases: browsing a specific unit (id param present),
+    // and a renter with no lease yet landing here with no id at all.
+    @GetMapping("/room-details")
+    public String showRoomDetails(@RequestParam(value = "id", required = false) Long unitId,
+                                  HttpSession session,
+                                  Model model) {
+        User user = (User) session.getAttribute("user");
+        if (user == null) return "redirect:/";
+
+        if (unitId != null) {
+            // Viewing a specific unit clicked from a building's floor plan.
+            Unit unit = unitService.getUnitById(unitId);
+            model.addAttribute("unit", unit);
+
+            // True when the logged-in renter is the one currently leasing this
+            // unit — controls whether the "Terminate lease" button is shown.
+            boolean isOwnUnit = unit != null
+                    && !unit.isAvailable()
+                    && unit.getRenter() != null
+                    && unit.getRenter().getName().equals(user.getName());
+            model.addAttribute("isOwnUnit", isOwnUnit);
+        }
+        // If unitId is null, "unit" stays unset and the template falls back
+        // to its "No unit selected" empty state.
+
+        return "room-details";
+    }
+
+
 }
