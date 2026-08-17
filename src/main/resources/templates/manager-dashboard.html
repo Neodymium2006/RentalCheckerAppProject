@@ -1,0 +1,145 @@
+<!--
+  manager-dashboard.html — Manager Dashboard (PDF Screen 6)
+  Maps to WebController#showManagerDashboard (GET /manager-dashboard).
+
+  Model attributes read here:
+    - user           : the logged-in BuildingManager
+    - managerName    : String, already provided by the controller
+    - myBuilding     : Building the manager is assigned to, with getUnits()
+                        -> List<Unit>; occupied units are expected to expose
+                        getRenter() -> Renter (getName(), getProfession())
+    - otherBuildings : List<Building> for the other two buildings — units
+                        only, no renter identities (managers may see
+                        availability elsewhere but never each other's
+                        renter details, per the brief)
+    - otherManagers  : List<BuildingManager> for the contact panel
+
+  This view enforces the brief's visibility rule in the markup itself:
+  renter names only ever appear inside the "My Building" card.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Building · Rental Checker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="page">
+    <div th:replace="~{fragments :: navbar('manager-dashboard')}"></div>
+
+    <div class="shell">
+        <div class="page-head">
+            <div>
+                <span class="eyebrow">Manager · <span th:text="${myBuilding.name}">Building A</span></span>
+                <h1>Welcome, <span th:text="${managerName}">Manager</span></h1>
+            </div>
+        </div>
+
+        <div class="stack">
+
+            <!-- My building: full detail, including renter identities -->
+            <div class="card">
+                <div class="section-title">
+                    <h2 th:text="'Units — ' + ${myBuilding.name}">Units — Building A</h2>
+                    <span class="chip chip--available"
+                          th:text="${#lists.size(myBuilding.units.?[available])} + ' open of ' + ${#lists.size(myBuilding.units)}">4 open of 6</span>
+                </div>
+
+                <div class="floor-stack">
+                    <div class="floor-row" th:each="floorNum : ${#numbers.sequence(5, 1, -1)}">
+                        <div class="floor-row__label" th:text="'FL ' + ${floorNum}">FL 3</div>
+                        <div class="floor-row__units">
+                            <div class="unit-tile"
+                                 th:each="unit : ${myBuilding.units.?[floor == #vars.floorNum]}"
+                                 th:classappend="${unit.available} ? 'unit-tile--available' : 'unit-tile--occupied'">
+                                <span class="unit-tile__code" th:text="${unit.unitNumber}">A-301</span>
+                                <span class="unit-tile__meta" th:text="${unit.available} ? 'Open' : unit.renter.name">Open</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Renter roster for my building only -->
+            <div class="card">
+                <div class="section-title">
+                    <h2>Renters in this building</h2>
+                </div>
+                <table class="ledger" th:if="${not #lists.isEmpty(myBuilding.units.?[!available])}">
+                    <thead>
+                    <tr>
+                        <th>Renter</th>
+                        <th>Unit</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="unit : ${myBuilding.units.?[!available]}">
+                        <td th:text="${unit.renter.name}">Renter name</td>
+                        <td class="mono" th:text="${unit.unitNumber}">A-201</td>
+                        <td style="text-align:right;">
+                            <a class="btn btn--ghost btn--sm" th:href="@{/room-details}">Contact</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div class="empty-state" th:if="${#lists.isEmpty(myBuilding.units.?[!available])}">
+                    <span class="eyebrow">All open</span>
+                    <h3>No renters yet</h3>
+                </div>
+            </div>
+
+            <!-- Other buildings: availability only, renter identities are hidden -->
+            <div class="card">
+                <div class="section-title">
+                    <h2>Other buildings</h2>
+                    <span class="eyebrow">Availability only</span>
+                </div>
+                <div class="building-grid">
+                    <div th:each="building : ${otherBuildings}" class="card" style="box-shadow:none;">
+                        <div class="building-card__head">
+                            <h3 class="building-card__name" th:text="${building.name}">Building B</h3>
+                            <span class="chip chip--available"
+                                  th:text="${#lists.size(building.units.?[available])} + ' open'">3 open</span>
+                        </div>
+                        <div class="building-card__stats" style="border-top:none; padding-top:0; margin-top:8px;">
+                            <div class="stat">
+                                <span class="stat__value stat__value--available"
+                                      th:text="${#lists.size(building.units.?[available])}">3</span>
+                                <span class="stat__label">Available</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat__value stat__value--occupied"
+                                      th:text="${#lists.size(building.units.?[!available])}">3</span>
+                                <span class="stat__label">Occupied</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact other managers -->
+            <div class="card">
+                <div class="section-title">
+                    <h2>Contact other managers</h2>
+                </div>
+                <div class="contact-list">
+                    <div class="contact-row" th:each="peer : ${otherManagers}">
+                        <div>
+                            <div class="contact-row__name" th:text="${peer.name}">Manager B</div>
+                            <div class="contact-row__role" th:text="'Manages ' + ${peer.building.name}">Manages Building B</div>
+                        </div>
+                        <a class="btn btn--brass btn--sm" th:href="@{/room-details}">Message</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

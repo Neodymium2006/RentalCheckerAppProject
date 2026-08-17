@@ -1,0 +1,90 @@
+<!--
+  register.html — Account registration
+  Maps to WebController#showRegisterPage (GET /register) and
+  WebController#processRegistration (POST /register).
+
+  Only MANAGER and RENTER can self-register (admin accounts are excluded,
+  per WebController's comment), so the role selector only offers those two.
+  The email field is only meaningful for renters (Renter#email), so it is
+  hidden until "Renter" is selected and is not marked required at the HTML
+  level — the controller already treats it as optional.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create account · Rental Checker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="page">
+    <div class="shell shell--narrow">
+
+        <div class="auth-header">
+            <div class="mark">RC</div>
+            <span class="eyebrow">Rental Checker · New Account</span>
+            <h1>Create your account</h1>
+            <p>Register as a building manager or as a renter.</p>
+        </div>
+
+        <div class="card">
+            <form th:action="@{/register}" method="post" autocomplete="off" id="register-form">
+
+                <div class="field">
+                    <label for="userType">I am a</label>
+                    <select id="userType" name="userType">
+                        <option value="RENTER" selected>Renter</option>
+                        <option value="MANAGER">Building Manager</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" placeholder="Full name" required>
+                </div>
+
+                <div class="field" id="email-field">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com">
+                </div>
+                <p class="form-hint" id="email-hint">Used by building managers to reach you about your unit.</p>
+
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Choose a password" required>
+                </div>
+
+                <button type="submit" class="btn btn--primary btn--block">Create account</button>
+            </form>
+
+            <div class="form-footer">
+                Already registered? <a th:href="@{/login}">Sign in instead</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Only renters supply an email (see Renter#email in the domain model),
+    // so hide the field entirely for managers rather than leaving it inert.
+    var userType = document.getElementById('userType');
+    var emailField = document.getElementById('email-field');
+    var emailHint = document.getElementById('email-hint');
+    var emailInput = document.getElementById('email');
+
+    function syncEmailField() {
+        var isRenter = userType.value === 'RENTER';
+        emailField.classList.toggle('field--hidden', !isRenter);
+        emailHint.style.display = isRenter ? 'block' : 'none';
+        if (!isRenter) { emailInput.value = ''; }
+    }
+
+    userType.addEventListener('change', syncEmailField);
+    syncEmailField();
+</script>
+
+</body>
+</html>

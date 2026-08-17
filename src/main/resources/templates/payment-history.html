@@ -1,0 +1,70 @@
+<!--
+  payment-history.html — Payment History
+
+  Model attributes read here:
+    - payments : List<Payment>, OPTIONAL — each expected to expose
+                  getDate(), getUnitNumber(), getAmount(), getStatus()
+                  ("PAID" / "PENDING" / "OVERDUE"). NOT YET added by
+                  WebController; wire it up via a PaymentService once one
+                  exists, scoped to the logged-in renter (or, for a
+                  manager, to their building's renters).
+
+  Renders as a plain ledger table so it reads like a paper rent book —
+  consistent with the directory/blueprint idiom used everywhere else.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment History · Rental Checker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="page">
+    <div th:replace="~{fragments :: navbar('payment-history')}"></div>
+
+    <div class="shell">
+        <div class="page-head">
+            <div>
+                <span class="eyebrow">Ledger</span>
+                <h1>Payment history</h1>
+            </div>
+        </div>
+
+        <div class="card">
+            <table class="ledger" th:if="${payments != null and not #lists.isEmpty(payments)}">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Unit</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="payment : ${payments}">
+                    <td class="mono" th:text="${payment.date}">2026-08-01</td>
+                    <td th:text="${payment.unitNumber}">A-301</td>
+                    <td class="mono" th:text="'₱' + ${payment.amount}">₱12,000</td>
+                    <td>
+                        <span class="chip"
+                              th:classappend="${payment.status == 'PAID'} ? 'chip--available' : 'chip--occupied'"
+                              th:text="${payment.status}">PAID</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="empty-state" th:if="${payments == null or #lists.isEmpty(payments)}">
+                <span class="eyebrow">Ledger empty</span>
+                <h3>No payments recorded yet</h3>
+                <p>Completed and upcoming payments will appear here once billing is set up.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

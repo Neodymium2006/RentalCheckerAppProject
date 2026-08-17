@@ -1,0 +1,106 @@
+<!--
+  room-details.html — Room Details (PDF Screen 5 & 9)
+  Maps to WebController#showRoomDetails (GET /room-details) and
+  WebController#terminateLeaseAction (POST /terminate-lease).
+
+  Model attributes read here:
+    - unit        : Unit being viewed — expected to expose getUnitNumber(),
+                     getFloor(), getSize(), getPrice(), isAvailable(),
+                     getBuilding() (getName(), getManager()), and, when
+                     leased, getRenter() (getName(), getProfession()).
+                     NOT YET added by WebController; wire it up via e.g.
+                     model.addAttribute("unit", unitService.getUnit(id))
+                     reading an "id" request param.
+    - isOwnUnit   : boolean, OPTIONAL — true when the viewer is the renter
+                     currently leasing this unit. Governs whether the
+                     "Terminate lease" action is shown (renter dashboard's
+                     "Current Unit" button links here for that renter).
+
+  Reused for three situations: a renter previewing an open unit before
+  booking, a renter or manager looking at an occupied unit, and the
+  renter's own "Current Unit" screen.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${unit != null ? unit.unitNumber + ' · Rental Checker' : 'Unit · Rental Checker'}">Unit · Rental Checker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="page">
+    <div th:replace="~{fragments :: navbar('room-details')}"></div>
+
+    <div class="shell">
+
+        <div th:if="${unit != null}">
+            <div class="page-head">
+                <div>
+                    <span class="eyebrow" th:text="${unit.building.name} + ' · Floor ' + ${unit.floor}">Building A · Floor 3</span>
+                    <h1 th:text="${unit.unitNumber}">A-301</h1>
+                </div>
+                <span class="chip"
+                      th:classappend="${unit.available} ? 'chip--available' : 'chip--occupied'"
+                      th:text="${unit.available} ? 'Open' : 'Leased'">Open</span>
+            </div>
+
+            <div class="card">
+                <div class="spec-grid">
+                    <div class="spec">
+                        <div class="spec__value" th:text="'₱' + ${unit.monthlyRent}">₱12,000</div>
+                        <div class="spec__label">Price / month</div>
+                    </div>
+                    <div class="spec">
+                        <div class="spec__value" th:text="'Floor ' + ${unit.floor}">Floor 3</div>
+                        <div class="spec__label">Location</div>
+                    </div>
+                    <div class="spec">
+                        <div class="spec__value" th:text="${unit.building.name}">Building A</div>
+                        <div class="spec__label">Building</div>
+                    </div>
+                </div>
+
+                <!-- Current tenant, shown only when occupied -->
+                <div th:if="${!unit.available and unit.renter != null}" style="margin-top:8px; padding-top:20px; border-top:1px dashed var(--line);">
+                    <div class="section-title"><h2>Leased to</h2></div>
+                    <div class="contact-row">
+                        <div>
+                            <div class="contact-row__name" th:text="${unit.renter.name}">Renter name</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="building-card__actions" style="margin-top:24px;">
+                    <!-- Renter booking an open unit -->
+                    <form th:if="${unit.available}" th:action="@{/rent/{id}(id=${unit.id})}" method="post">
+                        <button type="submit" class="btn btn--primary">Rent this unit</button>
+                    </form>
+
+                    <!-- Contact the building's manager -->
+                    <a class="btn btn--brass" th:if="${unit.building.manager != null}" th:href="@{/room-details}">
+                        Contact <span th:text="${unit.building.manager.name}">manager</span>
+                    </a>
+
+                    <!-- Renter's own current lease -->
+                    <form th:if="${isOwnUnit}" th:action="@{/terminate-lease}" method="post"
+                          onsubmit="return confirm('Terminate this lease? This cannot be undone.');">
+                        <button type="submit" class="btn btn--danger">Terminate lease</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${unit == null}">
+            <span class="eyebrow">Current Unit</span>
+            <h3>No unit selected</h3>
+            <p>Choose a unit from a building's floor plan to see its details here.</p>
+            <a class="btn btn--primary" th:href="@{/dashboard}">Back to lobby</a>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
