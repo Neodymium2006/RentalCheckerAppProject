@@ -1,0 +1,95 @@
+<!--
+  index.html — Login & role selection (PDF Screen 1 & 2)
+  Maps to WebController#showLoginPage (GET /, /login) and
+  WebController#processLogin (POST /login).
+
+  Model attributes read here:
+    - error   : String, set when authentication fails
+    - message : String, set after a successful registration redirect
+
+  Note: the three role tabs are a visual orientation aid only — the actual
+  account type is already stored on the user record, so the login form
+  itself only ever submits "name" and "password". Selecting a tab just
+  swaps the hero copy so the visitor confirms they're in the right place.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign in · Rental Checker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="page">
+    <div class="shell shell--narrow">
+
+        <div class="auth-header">
+            <div class="mark">RC</div>
+            <span class="eyebrow">Rental Checker · Directory Access</span>
+            <h1 id="hero-title">Sign in to the building directory</h1>
+            <p id="hero-sub">Enter your account to reach your dashboard.</p>
+        </div>
+
+        <div class="card">
+
+            <!-- Role tabs: presentation only, do not post any value -->
+            <div class="role-toggle" id="role-toggle">
+                <input type="radio" name="role-tab" id="tab-admin" checked>
+                <label for="tab-admin"
+                       data-title="Sign in to the building directory"
+                       data-sub="Oversee every building, manager and renter from one board.">Admin</label>
+
+                <input type="radio" name="role-tab" id="tab-manager">
+                <label for="tab-manager"
+                       data-title="Sign in as a building manager"
+                       data-sub="Track your building's units and stay in touch with renters.">Manager</label>
+
+                <input type="radio" name="role-tab" id="tab-renter">
+                <label for="tab-renter"
+                       data-title="Sign in as a renter"
+                       data-sub="Browse open units and manage your lease.">Renter</label>
+            </div>
+
+            <div class="alert alert--error" th:if="${error}" th:text="${error}">
+                Invalid name or password!
+            </div>
+            <div class="alert alert--success" th:if="${message}" th:text="${message}">
+                Registration successful!
+            </div>
+
+            <form th:action="@{/login}" method="post" autocomplete="off">
+                <div class="field">
+                    <label for="name">Name</label>
+                    <input type="text" id="name" name="name" placeholder="e.g. jane.dela.cruz" required>
+                </div>
+                <div class="field">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn--primary btn--block">Sign in</button>
+            </form>
+
+            <div class="form-footer">
+                New to the building? <a th:href="@{/register}">Create an account</a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // Swap the hero copy to match the selected role tab. Purely cosmetic —
+    // the login form itself is identical for every role.
+    document.querySelectorAll('#role-toggle input[name="role-tab"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            var label = document.querySelector('label[for="' + input.id + '"]');
+            document.getElementById('hero-title').textContent = label.getAttribute('data-title');
+            document.getElementById('hero-sub').textContent = label.getAttribute('data-sub');
+        });
+    });
+</script>
+
+</body>
+</html>
