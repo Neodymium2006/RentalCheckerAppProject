@@ -2,107 +2,70 @@ package ph.edu.dlsu.lbycpob.rentalcheckerappproject.model;
 
 import jakarta.persistence.*;
 
-// JPA Entity annotation mapping this class to the 'units' database table
 @Entity
 @Table(name = "units")
 public class Unit {
 
-    // Primary Key: Auto-incrementing ID for database records
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Encapsulated Field: Unit or apartment number (e.g., "101A", "302B")
     @Column(nullable = false)
     private String unitNumber;
 
-    // Encapsulated Field: Monthly rental price
     @Column(nullable = false)
     private double monthlyRent;
 
-    // Encapsulated Field: Current status of unit ("AVAILABLE", "RENTED", "MAINTENANCE")
     @Column(nullable = false)
     private String status;
 
-    // Relationship: Many Units belong to One Building
+    @Column(nullable = false)
+    private int floor;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "building_id")
     private Building building;
 
-    // Relationship: One Unit can be occupied by One Renter (Null if available)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "renter_id")
     private Renter renter;
 
-    // Default No-Argument Constructor required by JPA/Hibernate
     public Unit() {}
 
-    // Parameterized Constructor initializing unit attributes
-    public Unit(String unitNumber, double monthlyRent, String status, Building building) {
+    // The ONLY parameterized constructor — always takes floor as the 5th
+    // argument. If your IDE previously auto-generated a second, 4-argument
+    // overload of this constructor, delete it; that stray overload is the
+    // likely cause of "status" ending up null.
+    public Unit(String unitNumber, double monthlyRent, String status, Building building, int floor) {
         this.unitNumber = unitNumber;
         this.monthlyRent = monthlyRent;
         this.status = status;
         this.building = building;
-        this.renter = null; // Unoccupied upon creation
+        this.floor = floor;
+        this.renter = null;
     }
 
-    // Encapsulation Getter for Unit ID
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
 
-    // Encapsulation Getter for Unit Number
-    public String getUnitNumber() {
-        return unitNumber;
-    }
+    public String getUnitNumber() { return unitNumber; }
+    public void setUnitNumber(String unitNumber) { this.unitNumber = unitNumber; }
 
-    // Encapsulation Setter for Unit Number
-    public void setUnitNumber(String unitNumber) {
-        this.unitNumber = unitNumber;
-    }
+    public double getMonthlyRent() { return monthlyRent; }
+    public void setMonthlyRent(double monthlyRent) { this.monthlyRent = monthlyRent; }
 
-    // Encapsulation Getter for Monthly Rent
-    public double getMonthlyRent() {
-        return monthlyRent;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    // Encapsulation Setter for Monthly Rent
-    public void setMonthlyRent(double monthlyRent) {
-        this.monthlyRent = monthlyRent;
-    }
+    public int getFloor() { return floor; }
+    public void setFloor(int floor) { this.floor = floor; }
 
-    // Encapsulation Getter for Unit Status
-    public String getStatus() {
-        return status;
-    }
+    public Building getBuilding() { return building; }
+    public void setBuilding(Building building) { this.building = building; }
 
-    // Encapsulation Setter for Unit Status
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    // Encapsulation Getter for associated Building
-    public Building getBuilding() {
-        return building;
-    }
-
-    // Encapsulation Setter for associated Building
-    public void setBuilding(Building building) {
-        this.building = building;
-    }
-
-    // Encapsulation Getter for assigned Renter
-    public Renter getRenter() {
-        return renter;
-    }
-
-    // Encapsulation Setter for assigned Renter
-    public void setRenter(Renter renter) {
-        this.renter = renter;
-    }
+    public Renter getRenter() { return renter; }
+    public void setRenter(Renter renter) { this.renter = renter; }
 
     public boolean isAvailable() {
         return "AVAILABLE".equals(status);
     }
-
 }

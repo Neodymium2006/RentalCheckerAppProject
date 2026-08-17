@@ -55,6 +55,10 @@ public class UnitService {
         return unitRepository.findByBuilding_Id(buildingId);
     }
 
+    public List<Building> getAllBuildings() {
+        return buildingRepository.findAll();
+    }
+
     // Used by /room-details — fetch a single unit for the detail view.
     public Unit getUnitById(Long unitId) {
         return unitRepository.findById(unitId).orElse(null);
