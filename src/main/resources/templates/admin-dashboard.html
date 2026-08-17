@@ -1,0 +1,102 @@
+<!--
+  admin-dashboard.html — Admin Dashboard (PDF Screen 3)
+
+  Model attributes read here:
+    - user      : the logged-in Admin
+    - buildings : List<Building>, each expected to expose
+                    getId(), getName(), getAddress(),
+                    getManager()            -> BuildingManager (nullable, getName())
+                    getUnits()               -> List<Unit>, 10 per building
+                  and each Unit exposing getFloor(), getUnitNumber(), isAvailable(), getSize(), getPrice().
+
+  Every building is rendered as a floor stack (floor 3 at the top, floor 1
+  at the bottom, two units per floor) so the admin can read occupancy at a
+  glance across all three buildings, plus a per-building tally and a
+  one-click way to contact that building's manager.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buildings Overview · Rental Checker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="page">
+    <div th:replace="~{fragments :: navbar('admin-dashboard')}"></div>
+
+    <div class="shell">
+        <div class="page-head">
+            <div>
+                <span class="eyebrow">Admin · Portfolio</span>
+                <h1>All buildings at a glance</h1>
+            </div>
+        </div>
+
+        <div class="building-grid">
+            <div class="card" th:each="building : ${buildings}">
+
+                <div class="building-card__head">
+                    <div>
+                        <h3 class="building-card__name" th:text="${building.name}">Building A</h3>
+                        <div class="building-card__manager">
+                            Managed by
+                            <strong th:if="${building.manager != null}" th:text="${building.manager.name}">Unassigned</strong>
+                            <em th:if="${building.manager == null}">no manager assigned</em>
+                        </div>
+                    </div>
+                    <span class="chip chip--available"
+                          th:text="${#lists.size(building.units.?[available])} + ' open'">4 open</span>
+                </div>
+
+                <!-- Floor stack: floor 3 (top) down to floor 1 (bottom) -->
+                <div class="floor-stack">
+                    <div class="floor-row" th:each="floorNum : ${#numbers.sequence(5, 1, -1)}">
+                        <div class="floor-row__label" th:text="'FL ' + ${floorNum}">FL 3</div>
+                        <div class="floor-row__units">
+                            <a class="unit-tile"
+                               th:each="unit : ${building.units.?[floor == #vars.floorNum]}"
+                               th:href="@{/building-details(id=${building.id})}"
+                               th:classappend="${unit.available} ? 'unit-tile--available' : 'unit-tile--occupied'">
+                                <span class="unit-tile__code" th:text="${unit.unitNumber}">A-301</span>
+                                <span class="chip"
+                                      th:classappend="${unit.available} ? 'chip--available' : 'chip--occupied'"
+                                      th:text="${unit.available} ? 'Open' : 'Leased'">Open</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="building-card__stats">
+                    <div class="stat">
+                        <span class="stat__value stat__value--available"
+                              th:text="${#lists.size(building.units.?[available])}">4</span>
+                        <span class="stat__label">Available</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat__value stat__value--occupied"
+                              th:text="${#lists.size(building.units.?[!available])}">2</span>
+                        <span class="stat__label">Occupied</span>
+                    </div>
+                </div>
+
+                <div class="building-card__actions">
+                    <a class="btn btn--ghost btn--sm" th:href="@{/building-details(id=${building.id})}">View floors</a>
+                    <a class="btn btn--brass btn--sm"
+                       th:if="${building.manager != null}"
+                       th:href="@{/room-details}">Contact manager</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${#lists.isEmpty(buildings)}">
+            <span class="eyebrow">Portfolio empty</span>
+            <h3>No buildings on record yet</h3>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
