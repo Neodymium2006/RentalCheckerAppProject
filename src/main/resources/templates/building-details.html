@@ -1,0 +1,92 @@
+<!--
+  building-details.html — Building Details (PDF Screen 4)
+  Maps to WebController#showBuildingDetails (GET /building-details?id=).
+
+  Model attributes read here:
+    - buildingId : Long, already provided by the controller
+    - building   : Building for that id — expected to expose getName(),
+                    getAddress(), getManager(), and getUnits() (List<Unit>,
+                    5 floors × 2 units). NOT YET added by WebController;
+                    wire it up via e.g. model.addAttribute("building",
+                    unitService.getBuildingById(buildingId)) so this page
+                    has something to render.
+
+  Every unit tile links to /room-details so any role can drill into a
+  single unit's dimensions and price. Renters additionally get a
+  "Rent this unit" action on open units.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${building != null ? building.name + ' · Rental Checker' : 'Building · Rental Checker'}">Building · Rental Checker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="page">
+    <div th:replace="~{fragments :: navbar('building-details')}"></div>
+
+    <div class="shell">
+        <div class="page-head">
+            <div>
+                <span class="eyebrow">Building Details</span>
+                <h1 th:text="${building != null} ? ${building.name} : ('Building #' + ${buildingId})">Building A</h1>
+                <p th:if="${building != null}" th:text="${building.address}">123 Taft Avenue, Manila</p>
+            </div>
+            <a class="btn btn--ghost" th:href="@{/dashboard}">Back to lobby</a>
+        </div>
+
+        <div class="spec-grid" th:if="${building != null}">
+            <div class="spec">
+                <div class="spec__value">5</div>
+                <div class="spec__label">Floors</div>
+            </div>
+            <div class="spec">
+                <div class="spec__value">2</div>
+                <div class="spec__label">Units / floor</div>
+            </div>
+            <div class="spec">
+                <div class="spec__value" th:text="${#lists.size(building.units.?[available])}">4</div>
+                <div class="spec__label">Available now</div>
+            </div>
+            <div class="spec">
+                <div class="spec__value" th:if="${building.manager != null}" th:text="${building.manager.name}">Manager</div>
+                <div class="spec__value" th:if="${building.manager == null}">—</div>
+                <div class="spec__label">Manager</div>
+            </div>
+        </div>
+
+        <div class="card" th:if="${building != null}">
+            <div class="floor-stack">
+                <div class="floor-row" th:each="floorNum : ${#numbers.sequence(5, 1, -1)}">
+                    <div class="floor-row__label" th:text="'FL ' + ${floorNum}">FL 3</div>
+                    <div class="floor-row__units">
+                        <a class="unit-tile"
+                           th:each="unit : ${building.units.?[floor == #vars.floorNum]}"
+                           th:href="@{/room-details(id=${unit.id})}"
+                           th:classappend="${unit.available} ? 'unit-tile--available' : 'unit-tile--occupied'">
+                            <span>
+                                <span class="unit-tile__code" th:text="${unit.unitNumber}">A-301</span><br>
+                                <span class="unit-tile__meta" th:text="'₱' + ${unit.monthlyRent} + '/mo'">₱12,000/mo</span>
+                            </span>
+                            <span class="chip"
+                                  th:classappend="${unit.available} ? 'chip--available' : 'chip--occupied'"
+                                  th:text="${unit.available} ? 'Open' : 'Leased'">Open</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="empty-state" th:if="${building == null}">
+            <span class="eyebrow">Building #<span th:text="${buildingId}">1</span></span>
+            <h3>Details not available</h3>
+            <p>This building could not be loaded.</p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
