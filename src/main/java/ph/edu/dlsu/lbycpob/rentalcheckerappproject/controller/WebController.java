@@ -186,5 +186,43 @@ public class WebController {
         return "room-details";
     }
 
+    // Payment History Page View
+    @GetMapping("/payment-history")
+    public String showPaymentHistory(HttpSession session) {
+        if (session.getAttribute("user") == null) return "redirect:/";
+        return "payment-history";
+    }
 
+    // Handle Renting Unit Action
+    @PostMapping("/rent/{id}")
+    public String rentUnitAction(@PathVariable("id") Long unitId, HttpSession session) {
+        if (session.getAttribute("user") == null) return "redirect:/";
+        unitService.rentUnit(unitId);
+        return "redirect:/dashboard";
+    }
+
+    // Handle Terminate Lease Action
+    @PostMapping("/terminate-lease")
+    public String terminateLeaseAction(HttpSession session) {
+        if (session.getAttribute("user") == null) return "redirect:/";
+        return "redirect:/dashboard";
+    }
+
+    // Handle Logout and Session Invalidation
+    @GetMapping("/logout")
+    public String processLogout(HttpSession session) {
+        session.invalidate();
+        return "redirect:/";
+    }
+
+    // Helper method to automatically redirect logged-in users to their respective role dashboard
+    private String redirectToDashboard(User user) {
+        if ("ADMIN".equalsIgnoreCase(user.getUserType())) {
+            return "redirect:/admin-dashboard";
+        } else if ("MANAGER".equalsIgnoreCase(user.getUserType())) {
+            return "redirect:/manager-dashboard";
+        } else {
+            return "redirect:/dashboard";
+        }
+    }
 }
