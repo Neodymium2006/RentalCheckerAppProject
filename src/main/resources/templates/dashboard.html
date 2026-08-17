@@ -1,0 +1,103 @@
+<!--
+  dashboard.html — Renter Dashboard (PDF Screen 7 & 8)
+  Model attributes read here:
+    - user           : the logged-in Renter
+    - availableUnits : List<Unit> currently open for rent, each expected to
+                        expose getId(), getBuilding().getName(),
+                        getFloor(), getUnitNumber(), getSize(), getPrice()
+    - currentUnit     : Unit, OPTIONAL — the renter's active lease, if any.
+                        When absent/null the "Current Unit" button stays locked, matching the PDF note that it is empty until a unit has been booked.
+  The four large buttons reproduce the renter's four-button home screen
+  (Building A / B / C / Current Unit) described in the brief.
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobby · Rental Checker</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+<div class="page">
+    <div th:replace="~{fragments :: navbar('dashboard')}"></div>
+
+    <div class="shell">
+        <div class="page-head">
+            <div>
+                <span class="eyebrow">Renter Lobby</span>
+                <h1>Welcome back, <span th:text="${user.name}">Renter</span></h1>
+            </div>
+        </div>
+
+        <!-- Four-button lobby: Building A, B, C, Current Unit -->
+        <div class="lobby-grid">
+            <a class="lobby-btn" th:href="@{/building-details(id=1)}">
+                <span class="lobby-btn__letter">A</span>
+                <span class="lobby-btn__title">Building A</span>
+                <span class="lobby-btn__sub">View floors &amp; units</span>
+            </a>
+            <a class="lobby-btn" th:href="@{/building-details(id=2)}">
+                <span class="lobby-btn__letter">B</span>
+                <span class="lobby-btn__title">Building B</span>
+                <span class="lobby-btn__sub">View floors &amp; units</span>
+            </a>
+            <a class="lobby-btn" th:href="@{/building-details(id=3)}">
+                <span class="lobby-btn__letter">C</span>
+                <span class="lobby-btn__title">Building C</span>
+                <span class="lobby-btn__sub">View floors &amp; units</span>
+            </a>
+
+            <!-- Locked until a unit has been booked -->
+            <a class="lobby-btn"
+               th:href="@{/room-details}"
+               th:aria-disabled="${currentUnit == null}">
+                <span class="lobby-btn__letter">⌂</span>
+                <span class="lobby-btn__title">Current Unit</span>
+                <span class="lobby-btn__sub" th:text="${currentUnit != null} ? 'View your lease' : 'No unit booked yet'">No unit booked yet</span>
+            </a>
+        </div>
+
+        <div class="card" style="margin-top:32px;">
+            <div class="section-title">
+                <h2>Available units</h2>
+                <span class="eyebrow" th:text="${#lists.size(availableUnits)} + ' open'">0 open</span>
+            </div>
+
+            <table class="ledger" th:if="${not #lists.isEmpty(availableUnits)}">
+                <thead>
+                <tr>
+                    <th>Unit</th>
+                    <th>Building</th>
+                    <th>Floor</th>
+                    <th>Price / mo</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="unit : ${availableUnits}">
+                    <td class="mono" th:text="${unit.unitNumber}">A-301</td>
+                    <td th:text="${unit.building.name}">Building A</td>
+                    <td th:text="${unit.floor}">3</td>
+                    <td class="mono" th:text="'₱' + ${unit.monthlyRent}">₱12,000</td>
+                    <td style="text-align:right;">
+                        <form th:action="@{/rent/{id}(id=${unit.id})}" method="post">
+                            <button type="submit" class="btn btn--primary btn--sm">Rent unit</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="empty-state" th:if="${#lists.isEmpty(availableUnits)}">
+                <span class="eyebrow">Nothing open right now</span>
+                <h3>No available units</h3>
+                <p>Check back soon, or browse a specific building above.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
