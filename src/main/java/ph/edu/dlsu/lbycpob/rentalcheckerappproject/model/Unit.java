@@ -100,4 +100,9 @@ public class Unit {
     public void setRenter(Renter renter) {
         this.renter = renter;
     }
+
+    public boolean isAvailable() {
+        return "AVAILABLE".equals(status);
+    }
+
 }
