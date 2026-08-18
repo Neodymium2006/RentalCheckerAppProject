@@ -6,13 +6,18 @@
     - user           : the logged-in BuildingManager
     - managerName    : String, already provided by the controller
     - myBuilding     : Building the manager is assigned to, with getUnits()
-                        -> List<Unit>; occupied units are expected to expose
-                        getRenter() -> Renter (getName(), getProfession())
+                        -> List<Unit>; occupied units may expose
+                        getRenter() -> Renter (getName()) — but a unit can
+                        also be "!available" with a null renter if data is
+                        inconsistent, so every renter access here is
+                        null-guarded.
     - otherBuildings : List<Building> for the other two buildings — units
                         only, no renter identities (managers may see
                         availability elsewhere but never each other's
-                        renter details, per the brief)
-    - otherManagers  : List<BuildingManager> for the contact panel
+                        renter details, per the brief). Also drives the
+                        "contact other managers" panel via each building's
+                        getManager(), since BuildingManager has no
+                        back-reference to its own Building.
 
   This view enforces the brief's visibility rule in the markup itself:
   renter names only ever appear inside the "My Building" card.
@@ -56,19 +61,23 @@
                                  th:each="unit : ${myBuilding.units.?[floor == #vars.floorNum]}"
                                  th:classappend="${unit.available} ? 'unit-tile--available' : 'unit-tile--occupied'">
                                 <span class="unit-tile__code" th:text="${unit.unitNumber}">A-301</span>
-                                <span class="unit-tile__meta" th:text="${unit.available} ? 'Open' : unit.renter.name">Open</span>
+                                <span class="unit-tile__meta"
+                                      th:text="${unit.available} ? 'Open' : (${unit.renter != null} ? ${unit.renter.name} : 'Occupied')">Open</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Renter roster for my building only -->
+            <!-- Renter roster for my building only — filtered to units that
+                 both are occupied AND actually have a renter recorded, so
+                 leftover/inconsistent data (status=RENTED with no renter)
+                 can never null-pointer here. -->
             <div class="card">
                 <div class="section-title">
                     <h2>Renters in this building</h2>
                 </div>
-                <table class="ledger" th:if="${not #lists.isEmpty(myBuilding.units.?[!available])}">
+                <table class="ledger" th:if="${not #lists.isEmpty(myBuilding.units.?[!available and renter != null])}">
                     <thead>
                     <tr>
                         <th>Renter</th>
@@ -77,7 +86,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr th:each="unit : ${myBuilding.units.?[!available]}">
+                    <tr th:each="unit : ${myBuilding.units.?[!available and renter != null]}">
                         <td th:text="${unit.renter.name}">Renter name</td>
                         <td class="mono" th:text="${unit.unitNumber}">A-201</td>
                         <td style="text-align:right;">
@@ -86,7 +95,7 @@
                     </tr>
                     </tbody>
                 </table>
-                <div class="empty-state" th:if="${#lists.isEmpty(myBuilding.units.?[!available])}">
+                <div class="empty-state" th:if="${#lists.isEmpty(myBuilding.units.?[!available and renter != null])}">
                     <span class="eyebrow">All open</span>
                     <h3>No renters yet</h3>
                 </div>
@@ -121,16 +130,19 @@
                 </div>
             </div>
 
-            <!-- Contact other managers -->
+            <!-- Contact other managers — driven off otherBuildings (each
+                 Building already carries its own manager), since
+                 BuildingManager itself has no back-reference to its
+                 Building. No separate "otherManagers" attribute needed. -->
             <div class="card">
                 <div class="section-title">
                     <h2>Contact other managers</h2>
                 </div>
                 <div class="contact-list">
-                    <div class="contact-row" th:each="peer : ${otherManagers}">
+                    <div class="contact-row" th:each="building : ${otherBuildings}" th:if="${building.manager != null}">
                         <div>
-                            <div class="contact-row__name" th:text="${peer.name}">Manager B</div>
-                            <div class="contact-row__role" th:text="'Manages ' + ${peer.building.name}">Manages Building B</div>
+                            <div class="contact-row__name" th:text="${building.manager.name}">Manager B</div>
+                            <div class="contact-row__role" th:text="'Manages ' + ${building.name}">Manages Building B</div>
                         </div>
                         <a class="btn btn--brass btn--sm" th:href="@{/room-details}">Message</a>
                     </div>
