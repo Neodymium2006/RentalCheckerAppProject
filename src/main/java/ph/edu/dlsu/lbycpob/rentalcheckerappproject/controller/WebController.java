@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import ph.edu.dlsu.lbycpob.rentalcheckerappproject.model.*;
 import ph.edu.dlsu.lbycpob.rentalcheckerappproject.service.UnitService;
 import ph.edu.dlsu.lbycpob.rentalcheckerappproject.service.UserService;
-import ph.edu.dlsu.lbycpob.rentalcheckerappproject.model.Building;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,7 +46,6 @@ public class WebController {
                                       Model model) {
         User newUser;
 
-        // Instantiate concrete subclasses based on userType
         if ("MANAGER".equalsIgnoreCase(userType)) {
             newUser = new BuildingManager();
         } else {
@@ -89,6 +88,12 @@ public class WebController {
 
         model.addAttribute("user", user);
         model.addAttribute("availableUnits", unitService.getAvailableUnits());
+
+        // So the "Current Unit" button knows whether to unlock itself.
+        if (user instanceof Renter renter) {
+            model.addAttribute("currentUnit", unitService.getCurrentUnitForRenter(renter.getId()));
+        }
+
         return "dashboard";
     }
 
@@ -115,12 +120,10 @@ public class WebController {
         model.addAttribute("managerName", user.getName());
 
         // Split every building into "mine" vs "the others" so the template
-        // can show renter identities only for the manager's own building —
-        // other buildings only ever get availability numbers, per the brief.
+        // can show renter identities only for the manager's own building.
         List<Building> allBuildings = unitService.getAllBuildings();
         Building myBuilding = null;
         List<Building> otherBuildings = new ArrayList<>();
-        List<BuildingManager> otherManagers = new ArrayList<>();
 
         for (Building building : allBuildings) {
             boolean isMine = building.getManager() != null
@@ -129,15 +132,11 @@ public class WebController {
                 myBuilding = building;
             } else {
                 otherBuildings.add(building);
-                if (building.getManager() != null) {
-                    otherManagers.add(building.getManager());
-                }
             }
         }
 
         model.addAttribute("myBuilding", myBuilding);
         model.addAttribute("otherBuildings", otherBuildings);
-        model.addAttribute("otherManagers", otherManagers);
 
         return "manager-dashboard";
     }
@@ -150,16 +149,14 @@ public class WebController {
         if (session.getAttribute("user") == null) return "redirect:/";
 
         model.addAttribute("buildingId", buildingId);
-
-        // Load the actual Building so the floor stack has data to render.
         model.addAttribute("building", unitService.getBuildingById(buildingId));
 
         return "building-details";
     }
 
     // Room Details View (PDF Screen 5 & 9)
-    // Handles three cases: browsing a specific unit (id param present),
-    // and a renter with no lease yet landing here with no id at all.
+    // With an "id" param: browsing a specific unit clicked from a floor plan.
+    // Without one: falls back to the logged-in renter's current lease.
     @GetMapping("/room-details")
     public String showRoomDetails(@RequestParam(value = "id", required = false) Long unitId,
                                   HttpSession session,
@@ -167,21 +164,21 @@ public class WebController {
         User user = (User) session.getAttribute("user");
         if (user == null) return "redirect:/";
 
+        Unit unit;
         if (unitId != null) {
-            // Viewing a specific unit clicked from a building's floor plan.
-            Unit unit = unitService.getUnitById(unitId);
-            model.addAttribute("unit", unit);
-
-            // True when the logged-in renter is the one currently leasing this
-            // unit — controls whether the "Terminate lease" button is shown.
-            boolean isOwnUnit = unit != null
-                    && !unit.isAvailable()
-                    && unit.getRenter() != null
-                    && unit.getRenter().getName().equals(user.getName());
-            model.addAttribute("isOwnUnit", isOwnUnit);
+            unit = unitService.getUnitById(unitId);
+        } else if (user instanceof Renter renter) {
+            unit = unitService.getCurrentUnitForRenter(renter.getId());
+        } else {
+            unit = null;
         }
-        // If unitId is null, "unit" stays unset and the template falls back
-        // to its "No unit selected" empty state.
+        model.addAttribute("unit", unit);
+
+        boolean isOwnUnit = unit != null
+                && !unit.isAvailable()
+                && unit.getRenter() != null
+                && unit.getRenter().getId().equals(user.getId());
+        model.addAttribute("isOwnUnit", isOwnUnit);
 
         return "room-details";
     }
@@ -196,15 +193,24 @@ public class WebController {
     // Handle Renting Unit Action
     @PostMapping("/rent/{id}")
     public String rentUnitAction(@PathVariable("id") Long unitId, HttpSession session) {
-        if (session.getAttribute("user") == null) return "redirect:/";
-        unitService.rentUnit(unitId);
+        User user = (User) session.getAttribute("user");
+        if (user == null) return "redirect:/";
+
+        if (user instanceof Renter renter) {
+            unitService.rentUnit(unitId, renter);
+        }
         return "redirect:/dashboard";
     }
 
-    // Handle Terminate Lease Action
+    // Handle Terminate Lease Action (PDF Screen 8 & 9)
     @PostMapping("/terminate-lease")
     public String terminateLeaseAction(HttpSession session) {
-        if (session.getAttribute("user") == null) return "redirect:/";
+        User user = (User) session.getAttribute("user");
+        if (user == null) return "redirect:/";
+
+        if (user instanceof Renter renter) {
+            unitService.terminateLease(renter.getId());
+        }
         return "redirect:/dashboard";
     }
 

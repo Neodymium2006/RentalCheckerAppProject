@@ -39,8 +39,7 @@ public class DataSeeder implements CommandLineRunner {
         seedBuilding("Building C", "5 Vito Cruz Extension, Manila", "managerC", "0917-100-0003");
     }
 
-    // Creates the manager, the building, and its 10 units (5 floors x 2
-    // units), then saves the building once — Building's
+    // Creates the manager, the building, and its 10 units (5 floors x 2 units), then saves the building once — Building's
     // cascade = CascadeType.ALL on "units" persists all of them together.
     private void seedBuilding(String buildingName, String address, String managerName, String managerPhone) {
         BuildingManager manager = new BuildingManager(managerName, "manager123", managerPhone);

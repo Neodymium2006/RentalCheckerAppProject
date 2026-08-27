@@ -1,0 +1,60 @@
+<!--
+  fragments.html
+  Shared Thymeleaf fragments used across the authenticated screens.
+  Currently holds only the top "directory bar" navigation, since it is the
+  one piece of chrome that repeats on every logged-in page.
+
+  Usage from another template:
+    <div th:replace="~{fragments :: navbar('dashboard')}"></div>
+
+  The fragment reads the logged-in user straight from the HTTP session
+  (Thymeleaf exposes session attributes through the implicit "session"
+  variable), so no controller needs to add a "user" model attribute just
+  for navigation to work.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<div th:fragment="navbar(activePage)" class="directory-bar">
+    <div class="directory-bar__inner">
+
+        <a th:href="@{/}" class="directory-bar__brand">
+            RENTAL CHECKER <span class="tag">DIRECTORY</span>
+        </a>
+
+        <nav class="directory-bar__nav" th:if="${session.user != null}">
+            <!-- Admin links -->
+            <th:block th:if="${session.user.userType == 'ADMIN'}">
+                <a th:href="@{/admin-dashboard}"
+                   th:classappend="${activePage == 'admin-dashboard'} ? 'is-active'">Buildings Overview</a>
+            </th:block>
+
+            <!-- Manager links -->
+            <th:block th:if="${session.user.userType == 'MANAGER'}">
+                <a th:href="@{/manager-dashboard}"
+                   th:classappend="${activePage == 'manager-dashboard'} ? 'is-active'">My Building</a>
+                <a th:href="@{/payment-history}"
+                   th:classappend="${activePage == 'payment-history'} ? 'is-active'">Payment History</a>
+            </th:block>
+
+            <!-- Renter links -->
+            <th:block th:if="${session.user.userType == 'RENTER'}">
+                <a th:href="@{/dashboard}"
+                   th:classappend="${activePage == 'dashboard'} ? 'is-active'">Lobby</a>
+                <a th:href="@{/room-details}"
+                   th:classappend="${activePage == 'room-details'} ? 'is-active'">Current Unit</a>
+                <a th:href="@{/payment-history}"
+                   th:classappend="${activePage == 'payment-history'} ? 'is-active'">Payment History</a>
+            </th:block>
+        </nav>
+
+        <div class="directory-bar__user" th:if="${session.user != null}">
+            <span class="role-chip" th:text="${session.user.userType}">ROLE</span>
+            <span th:text="${session.user.name}">Name</span>
+            <a th:href="@{/logout}" class="btn btn--ghost btn--sm" style="color:#eef1f6;border-color:rgba(255,255,255,0.25);">Sign out</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
